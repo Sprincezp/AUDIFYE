@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudifyePro — Next-Gen Audio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] }
+            }
+        }
+    }
+    </script>
+    <style>
+        ::selection { background: rgba(6,182,212,0.3); color: #ecfeff; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        .perspective-1000 { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+
+        .orbit-ring {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform-style: preserve-3d;
+        }
+        .orbit-ring-1 {
+            width: 420px; height: 420px;
+            margin: -210px 0 0 -210px;
+            border: 1px solid rgba(6,182,212,0.15);
+            animation: orbit1 15s linear infinite;
+        }
+        .orbit-ring-2 {
+            width: 350px; height: 350px;
+            margin: -175px 0 0 -175px;
+            border: 1px solid rgba(37,99,235,0.15);
+            animation: orbit2 12s linear infinite;
+        }
+        .orbit-ring-3 {
+            width: 500px; height: 500px;
+            margin: -250px 0 0 -250px;
+            border: 1px solid rgba(139,92,246,0.08);
+            animation: orbit3 20s linear infinite;
+        }
+        @keyframes orbit1 { from { transform: rotateX(65deg) rotateZ(0deg); } to { transform: rotateX(65deg) rotateZ(360deg); } }
+        @keyframes orbit2 { from { transform: rotateX(75deg) rotateY(30deg) rotateZ(0deg); } to { transform: rotateX(75deg) rotateY(30deg) rotateZ(360deg); } }
+        @keyframes orbit3 { from { transform: rotateX(55deg) rotateY(-20deg) rotateZ(0deg); } to { transform: rotateX(55deg) rotateY(-20deg) rotateZ(360deg); } }
+
+        .orbit-dot {
+            position: absolute;
+            width: 6px; height: 6px;
+            background: #06b6d4;
+            border-radius: 50%;
+            box-shadow: 0 0 12px rgba(6,182,212,0.9);
+        }
+
+        .grid-bg {
+            background-image:
+                linear-gradient(rgba(51,65,85,0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(51,65,85,0.12) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+        }
+
+        .noise::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            pointer-events: none;
+            z-index: 9999;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 128px 128px;
+        }
+
+        .spotlight {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            transition: background 0.15s ease;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #06b6d4, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .product-sphere {
+            border-radius: 50%;
+            background: radial-gradient(circle at 32% 28%, #67e8f9, #06b6d4 25%, #0891b2 40%, #164e63 65%, #020617 100%);
+            box-shadow:
+                0 0 80px rgba(6,182,212,0.3),
+                0 0 160px rgba(6,182,212,0.1),
+                inset 0 -30px 50px rgba(0,0,0,0.4),
+                inset 0 20px 40px rgba(103,232,249,0.15);
+            animation: breathe 4s ease-in-out infinite;
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.03); filter: brightness(1.1); }
+        }
+
+        .glow-button { position: relative; overflow: hidden; }
+        .glow-button::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            background: linear-gradient(135deg, #06b6d4, #2563eb, #7c3aed);
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s;
+            filter: blur(16px);
+        }
+        .glow-button:hover::before { opacity: 0.7; }
+
+        .tilt-card {
+            transform-style: preserve-3d;
+            transition: transform 0.2s ease-out, border-color 0.3s;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        @keyframes scrollBounce {
+            0%, 100% { transform: translateY(0); opacity: 0.4; }
+            50% { transform: translateY(10px); opacity: 1; }
+        }
+        .scroll-indicator { animation: scrollBounce 2s ease-in-out infinite; }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .shimmer-line {
+            background: linear-gradient(90deg, transparent 30%, rgba(6,182,212,0.08) 50%, transparent 70%);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes float-badge {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .float-badge { animation: float-badge 3s ease-in-out infinite; }
+        .float-badge-delay { animation: float-badge 3s ease-in-out infinite; animation-delay: 1.5s; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#020617] text-white overflow-x-hidden noise">
+
+    <div class="spotlight" id="spotlight"></div>
+
+    <!-- Scroll Progress -->
+    <div class="fixed top-0 left-0 right-0 h-[3px] z-[100]">
+        <div id="scroll-progress" class="h-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 origin-left" style="transform:scaleX(0)"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 h-16 flex items-center transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto w-full px-6 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-2.5 group">
+                <div class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-shadow duration-300">
+                    <i data-lucide="headphones" class="w-4 h-4 text-white"></i>
+                </div>
+                <span class="font-semibold text-lg tracking-tight">AUDIFYE</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-sm text-slate-400 hover:text-white transition-colors duration-150 relative group">
+                    Features
+                    <span class="absolute -bottom-1 left-0 w-0 h-[1px] bg-cyan-500 group-hover:w-full transition-all duration-300"></span>
+                </a>
+                <a href="#showcase" class="text-sm text-slate-400 hover:text-white transition-colors duration-150 relative group">
+                    Product
+                    <span class="absolute -bottom-1 left-0 w-0 h-[1px] bg-cyan-500 group-hover:w-full transition-all duration-300"></span>
+                </a>
+                <a href="#specs" class="text-sm text-slate-400 hover:text-white transition-colors duration-150 relative group">
+                    Specs
+                    <span class="absolute -bottom-1 left-0 w-0 h-[1px] bg-cyan-500 group-hover:w-full transition-all duration-300"></span>
+                </a>
+                <a href="#reviews" class="text-sm text-slate-400 hover:text-white transition-colors duration-150 relative group">
+                    Reviews
+                    <span class="absolute -bottom-1 left-0 w-0 h-[1px] bg-cyan-500 group-hover:w-full transition-all duration-300"></span>
+                </a>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="hidden sm:block text-sm text-slate-400 hover:text-white transition-colors duration-150 px-4 py-2">Sign In</button>
+                <button class="text-sm font-medium bg-slate-800/80 hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg border border-slate-700 hover:border-slate-600 transition-all duration-150 backdrop-blur-sm">
+                    Pre-Order
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===================== HERO ===================== -->
+    <section class="min-h-screen relative flex items-center justify-center overflow-hidden pt-16" id="hero-section">
+        <div class="absolute inset-0 grid-bg"></div>
+        <div class="orb-1 absolute top-[20%] left-[15%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="orb-2 absolute bottom-[20%] right-[15%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="orb-3 absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-6 w-full">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+                <!-- Left -->
+                <div class="text-center lg:text-left order-2 lg:order-1">
+                    <div id="hero-badge" class="inline-flex items-center gap-2 px-4 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-8">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                        </span>
+                        <span class="text-[11px] font-medium text-cyan-400 tracking-wide uppercase">New Release 2026</span>
+                    </div>
+
+                    <h1 id="hero-title" class="text-[44px] sm:text-5xl md:text-6xl lg:text-[72px] font-semibold tracking-tight leading-[1.08] mb-6">
+                        Sound<br>
+                        <span class="gradient-text">Beyond</span><br>
+                        Limits
+                    </h1>
+
+                    <p id="hero-subtitle" class="text-lg text-slate-400 max-w-md mx-auto lg:mx-0 mb-10 leading-relaxed">
+                        Experience audio like never before. AudifyePro delivers immersive 3D spatial sound with AI-powered noise cancellation.
+                    </p>
+
+                    <div id="hero-buttons" class="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+                        <button class="glow-button w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium px-8 py-3.5 rounded-xl text-sm transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.25)] hover:shadow-[0_0_60px_rgba(6,182,212,0.5)]">
+                            Pre-Order — $349
+                        </button>
+                        <button class="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white font-medium px-8 py-3.5 rounded-xl text-sm border border-slate-700 hover:border-slate-600 transition-all duration-300 group">
+                            <i data-lucide="play" class="w-4 h-4 group-hover:text-cyan-400 transition-colors"></i>
+                            Watch Film
+                        </button>
+                    </div>
+
+                    <div id="hero-stats" class="flex items-center gap-8 mt-12 justify-center lg:justify-start">
+                        <div>
+                            <div class="text-2xl font-semibold" data-count="50">0</div>
+                            <div class="text-[11px] text-slate-500 mt-1 uppercase tracking-wider">Hours Battery</div>
+                        </div>
+                        <div class="w-px h-10 bg-slate-800"></div>
+                        <div>
+                            <div class="text-2xl font-semibold" data-count="-48" data-prefix="-" data-suffix="dB">0</div>
+                            <div class="text-[11px] text-slate-500 mt-1 uppercase tracking-wider">Noise Cancel</div>
+                        </div>
+                        <div class="w-px h-10 bg-slate-800"></div>
+                        <div>
+                            <div class="text-2xl font-semibold" data-count="40" data-suffix="ms">0</div>
+                            <div class="text-[11px] text-slate-500 mt-1 uppercase tracking-wider">Latency</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: 3D Product -->
+                <div id="product-parallax" class="order-1 lg:order-2 flex items-center justify-center">
+                    <div id="product-container" class="perspective-1000 cursor-grab active:cursor-grabbing">
+                        <div id="product-3d" class="preserve-3d relative" style="width:300px;height:300px;">
+                            <div class="orbit-ring orbit-ring-1">
+                                <div class="orbit-dot" style="top:0;left:50%;margin:-3px 0 0 -3px;"></div>
+                                <div class="orbit-dot" style="bottom:0;left:50%;margin:0 0 -3px -3px;"></div>
+                            </div>
+                            <div class="orbit-ring orbit-ring-2">
+                                <div class="orbit-dot" style="top:50%;right:0;margin:-3px -3px 0 0;background:#2563eb;box-shadow:0 0 12px rgba(37,99,235,0.9);"></div>
+                            </div>
+                            <div class="orbit-ring orbit-ring-3">
+                                <div class="orbit-dot" style="top:0;left:50%;margin:-3px 0 0 -3px;background:#7c3aed;box-shadow:0 0 12px rgba(124,58,237,0.9);width:4px;height:4px;"></div>
+                            </div>
+
+                            <div class="product-sphere absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[240px] h-[240px] md:w-[280px] md:h-[280px] z-10"></div>
+
+                            <div class="absolute bottom-[-30px] left-1/2 -translate-x-1/2 w-[200px] h-[50px] bg-cyan-500/20 rounded-full blur-[40px] z-0"></div>
+
+                            <div class="float-badge absolute -top-2 -right-2 md:-right-10 bg-slate-800/90 backdrop-blur-md border border-slate-700/80 rounded-xl px-4 py-2.5 text-xs z-20 shadow-lg">
+                                <div class="text-cyan-400 font-medium flex items-center gap-1.5">
+                                    <i data-lucide="radio" class="w-3 h-3"></i> Spatial Audio
+                                </div>
+                                <div class="text-slate-500 text-[10px] mt-0.5">360° Sound</div>
+                            </div>
+                            <div class="float-badge-delay absolute -bottom-2 -left-2 md:-left-10 bg-slate-800/90 backdrop-blur-md border border-slate-700/80 rounded-xl px-4 py-2.5 text-xs z-20 shadow-lg">
+                                <div class="text-blue-400 font-medium flex items-center gap-1.5">
+                                    <i data-lucide="brain" class="w-3 h-3"></i> AI ANC
+                                </div>
+                                <div class="text-slate-500 text-[10px] mt-0.5">Adaptive Noise</div>
+                            </div>
+                            <div class="float-badge absolute top-1/2 -translate-y-1/2 -left-4 md:-left-14 bg-slate-800/90 backdrop-blur-md border border-slate-700/80 rounded-xl px-3 py-2 text-[10px] z-20 shadow-lg" style="animation-delay:0.8s;">
+                                <div class="text-purple-400 font-medium">Hi-Res</div>
+                                <div class="text-slate-500 text-[9px]">LDAC ✦</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="hero-scroll" class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 scroll-indicator z-10">
+            <span class="text-[10px] text-slate-500 uppercase tracking-[0.2em]">Scroll</span>
+            <i data-lucide="chevrons-down" class="w-4 h-4 text-slate-500"></i>
+        </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section id="features" class="py-24 md:py-32 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <div class="section-heading inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-6">
+                    <i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i>
+                    <span class="text-[11px] font-medium text-cyan-400 uppercase tracking-wider">Features</span>
+                </div>
+                <h2 class="section-heading text-3xl md:text-5xl font-semibold tracking-tight mb-4">
+                    Engineered for <span class="gradient-text">Perfection</span>
+                </h2>
+                <p class="section-heading text-slate-400 max-w-2xl mx-auto text-base">
+                    Every detail is meticulously crafted to deliver an unparalleled audio experience.
+                </p>
+            </div>
+
+            <div class="features-grid grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="feature-card tilt-card group p-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl hover:border-cyan-500/30 transition-colors duration-300 cursor-default">
+                    <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-5 group-hover:shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-shadow duration-300">
+                        <i data-lucide="volume-2" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="text-[15px] font-medium mb-2">Spatial Audio</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Immersive 360° sound that places you at the center of your music.</p>
+                </div>
+
+                <div class="feature-card tilt-card group p-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl hover:border-blue-500/30 transition-colors duration-300 cursor-default">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-5 group-hover:shadow-[0_0_25px_rgba(37,99,235,0.35)] transition-shadow duration-300">
+                        <i data-lucide="brain" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="text-[15px] font-medium mb-2">AI Noise Cancel</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Adaptive AI learns your environment for perfect noise cancellation.</p>
+                </div>
+
+                <div class="feature-card tilt-card group p-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl hover:border-purple-500/30 transition-colors duration-300 cursor-default">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-5 group-hover:shadow-[0_0_25px_rgba(139,92,246,0.35)] transition-shadow duration-300">
+                        <i data-lucide="battery-full" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="text-[15px] font-medium mb-2">50h Battery</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Marathon battery life with fast charging — 5 hours in 10 minutes.</p>
+                </div>
+
+                <div class="feature-card tilt-card group p-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl hover:border-emerald-500/30 transition-colors duration-300 cursor-default">
+                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-5 group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-shadow duration-300">
+                        <i data-lucide="bluetooth" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="text-[15px] font-medium mb-2">BT 5.4</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Latest Bluetooth with lossless audio and multi-device pairing.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== 3D SHOWCASE ===================== -->
+    <section id="showcase" class="py-24 md:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 grid-bg opacity-40"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div class="flex items-center justify-center perspective-1000">
+                    <div id="showcase-inner" class="preserve-3d relative">
+                        <div class="w-[320px] h-[320px] md:w-[400px] md:h-[400px] rounded-full bg-gradient-to-br from-cyan-400/10 via-blue-600/10 to-purple-600/10 border border-cyan-500/10 flex items-center justify-center relative">
+                            <div class="w-[240px] h-[240px] md:w-[300px] md:h-[300px] rounded-full bg-gradient-to-br from-cyan-500/15 via-blue-600/15 to-purple-600/10 border border-cyan-500/15 flex items-center justify-center">
+                                <div class="w-[160px] h-[160px] md:w-[200px] md:h-[200px] product-sphere"></div>
+                            </div>
+                            <div class="absolute inset-0 rounded-full border border-cyan-500/8" style="animation:spin 20s linear infinite;"></div>
+                            <div class="absolute inset-4 rounded-full border border-blue-500/8" style="animation:spin 15s linear infinite reverse;"></div>
+                            <div class="absolute inset-8 rounded-full border border-purple-500/5" style="animation:spin 25s linear infinite;"></div>
+                        </div>
+
+                        <div class="float-badge absolute top-0 right-0 md:-right-6 bg-slate-800/90 backdrop-blur-md border border-slate-700/80 rounded-lg px-3 py-2 text-xs shadow-lg z-20">
+                            <span class="text-cyan-400 font-semibold">50mm</span>
+                            <span class="text-slate-500 ml-1">Drivers</span>
+                        </div>
+                        <div class="float-badge-delay absolute bottom-0 left-0 md:-left-6 bg-slate-800/90 backdrop-blur-md border border-slate-700/80 rounded-lg px-3 py-2 text-xs shadow-lg z-20">
+                            <span class="text-purple-400 font-semibold">Hi-Res</span>
+                            <span class="text-slate-500 ml-1">LDAC</span>
+                        </div>
+                        <div class="float-badge absolute top-1/2 -translate-y-1/2 -right-2 md:-right-14 bg-slate-800/90 backdrop-blur-md border border-slate-700/80 rounded-lg px-3 py-2 text-xs shadow-lg z-20" style="animation-delay:0.6s;">
+                            <span class="text-blue-400 font-semibold">248g</span>
+                            <span class="text-slate-500 ml-1">Ultra Light</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="section-heading inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-6">
+                        <i data-lucide="gem" class="w-3 h-3 text-cyan-400"></i>
+                        <span class="text-[11px] font-medium text-cyan-400 uppercase tracking-wider">Product Design</span>
+                    </div>
+                    <h2 class="section-heading text-3xl md:text-5xl font-semibold tracking-tight mb-6">
+                        Crafted with<br><span class="gradient-text">Precision</span>
+                    </h2>
+                    <p class="section-heading text-slate-400 leading-relaxed mb-10">
+                        The AudifyePro features an aerospace-grade titanium frame with memory foam ear cushions wrapped in premium Italian leather. Every curve is designed for all-day comfort.
+                    </p>
+
+                    <div class="space-y-6">
+                        <div class="section-heading flex items-start gap-4 group">
+                            <div class="w-11 h-11 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-cyan-500/15 transition-colors">
+                                <i data-lucide="feather" class="w-4 h-4 text-cyan-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-sm mb-1">Ultra-Light Design</h4>
+                                <p class="text-sm text-slate-400 leading-relaxed">Only 248g with balanced weight distribution for zero fatigue during extended sessions.</p>
+                            </div>
+                        </div>
+                        <div class="section-heading flex items-start gap-4 group">
+                            <div class="w-11 h-11 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-blue-500/15 transition-colors">
+                                <i data-lucide="shield" class="w-4 h-4 text-blue-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-sm mb-1">IP55 Water Resistant</h4>
+                                <p class="text-sm text-slate-400 leading-relaxed">Protected against water and dust for use in any environment, rain or shine.</p>
+                            </div>
+                        </div>
+                        <div class="section-heading flex items-start gap-4 group">
+                            <div class="w-11 h-11 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-purple-500/15 transition-colors">
+                                <i data-lucide="hand" class="w-4 h-4 text-purple-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-sm mb-1">Gesture Controls</h4>
+                                <p class="text-sm text-slate-400 leading-relaxed">Intuitive touch surface on the ear cup — swipe, tap, and pinch to control everything.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== SPECS ===================== -->
+    <section id="specs" class="py-24 md:py-32 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid lg:grid-cols-2 gap-16 items-start">
+                <div>
+                    <div class="section-heading inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-6">
+                        <i data-lucide="bar-chart-3" class="w-3 h-3 text-cyan-400"></i>
+                        <span class="text-[11px] font-medium text-cyan-400 uppercase tracking-wider">Technical Specs</span>
+                    </div>
+                    <h2 class="section-heading text-3xl md:text-4xl font-semibold tracking-tight mb-10">
+                        Numbers that <span class="gradient-text">Speak</span>
+                    </h2>
+
+                    <div class="space-y-7">
+                        <div class="section-heading">
+                            <div class="flex justify-between mb-2.5">
+                                <span class="text-sm font-medium">Sound Quality</span>
+                                <span class="text-sm text-cyan-400 font-medium">98%</span>
+                            </div>
+                            <div class="h-2 bg-slate-800/80 rounded-full overflow-hidden">
+                                <div class="spec-bar-fill h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" style="width:98%"></div>
+                            </div>
+                        </div>
+                        <div class="section-heading">
+                            <div class="flex justify-between mb-2.5">
+                                <span class="text-sm font-medium">Noise Cancellation</span>
+                                <span class="text-sm text-blue-400 font-medium">95%</span>
+                            </div>
+                            <div class="h-2 bg-slate-800/80 rounded-full overflow-hidden">
+                                <div class="spec-bar-fill h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style="width:95%"></div>
+                            </div>
+                        </div>
+                        <div class="section-heading">
+                            <div class="flex justify-between mb-2.5">
+                                <span class="text-sm font-medium">Comfort Score</span>
+                                <span class="text-sm text-purple-400 font-medium">96%</span>
+                            </div>
+                            <div class="h-2 bg-slate-800/80 rounded-full overflow-hidden">
+                                <div class="spec-bar-fill h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" style="width:96%"></div>
+                            </div>
+                        </div>
+                        <div class="section-heading">
+                            <div class="flex justify-between mb-2.5">
+                                <span class="text-sm font-medium">Build Quality</span>
+                                <span class="text-sm text-emerald-400 font-medium">99%</span>
+                            </div>
+                            <div class="h-2 bg-slate-800/80 rounded-full overflow-hidden">
+                                <div class="spec-bar-fill h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style="width:99%"></div>
+                            </div>
+                        </div>
+                        <div class="section-heading">
+                            <div class="flex justify-between mb-2.5">
+                                <span class="text-sm font-medium">Value for Money</span>
+                                <span class="text-sm text-amber-400 font-medium">92%</span>
+                            </div>
+                            <div class="h-2 bg-slate-800/80 rounded-full overflow-hidden">
+                                <div class="spec-bar-fill h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full" style="width:92%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-5">
+                    <div class="section-heading p-7 bg-slate-800/40 border border-slate-700/50 rounded-2xl text-center hover:border-cyan-500/20 transition-colors duration-300 group">
+                        <div class="text-3xl md:text-4xl font-semibold gradient-text mb-2 group-hover:scale-105 transition-transform duration-300">50mm</div>
+                        <div class="text-sm text-slate-400">Custom Drivers</div>
+                    </div>
+                    <div class="section-heading p-7 bg-slate-800/40 border border-slate-700/50 rounded-2xl text-center hover:border-blue-500/20 transition-colors duration-300 group">
+                        <div class="text-3xl md:text-4xl font-semibold gradient-text mb-2 group-hover:scale-105 transition-transform duration-300">-48dB</div>
+                        <div class="text-sm text-slate-400">Noise Reduction</div>
+                    </div>
+                    <div class="section-heading p-7 bg-slate-800/40 border border-slate-700/50 rounded-2xl text-center hover:border-purple-500/20 transition-colors duration-300 group">
+                        <div class="text-3xl md:text-4xl font-semibold gradient-text mb-2 group-hover:scale-105 transition-transform duration-300">248g</div>
+                        <div class="text-sm text-slate-400">Ultra Light</div>
+                    </div>
+                    <div class="section-heading p-7 bg-slate-800/40 border border-slate-700/50 rounded-2xl text-center hover:border-emerald-500/20 transition-colors duration-300 group">
+                        <div class="text-3xl md:text-4xl font-semibold gradient-text mb-2 group-hover:scale-105 transition-transform duration-300">20Hz</div>
+                        <div class="text-sm text-slate-400">Deep Bass</div>
+                    </div>
+                    <div class="section-heading col-span-2 p-7 bg-slate-800/40 border border-slate-700/50 rounded-2xl text-center hover:border-cyan-500/20 transition-colors duration-300">
+                        <div class="flex items-center justify-center gap-3 mb-2">
+                            <div class="text-3xl md:text-4xl font-semibold gradient-text group-hover:scale -105 transition-transform duration-300">5h</div>
+                            <div class="text-3xl md:text-4xl font-semibold text-slate-500">/</div>
+                            <div class="text-3xl md:text-4xl font-semibold gradient-text group-hover:scale-105 transition-transform duration-300">10min</div>
+                        </div>
+                        <div class="text-sm text-slate-400">Fast Charging</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== REVIEWS ===================== -->
+    <section id="reviews" class="py-24 md:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 grid-bg opacity-30"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-16">
+                <div class="section-heading inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-6">
+                    <i data-lucide="star" class="w-3 h-3 text-cyan-400"></i>
+                    <span class="text-[11px] font-medium text-cyan-400 uppercase tracking-wider">Reviews</span>
+                </div>
+                <h2 class="section-heading text-3xl md:text-5xl font-semibold tracking-tight mb-4">
+                    Loved by <span class="gradient-text">Thousands</span>
+                </h2>
+                <p class="section-heading text-slate-400 max-w-2xl mx-auto text-base">
+                    See what early adopters and audio professionals are saying about AudifyePro.
+                </p>
+            </div>
+
+            <div class="reviews-grid grid md:grid-cols-3 gap-6">
+                <div class="review-card tilt-card p-8 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl hover:border-cyan-500/20 transition-colors duration-300">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    </div>
+                    <p class="text-sm text-slate-300 leading-relaxed mb-6">"The spatial audio is absolutely mind-blowing. I've tested every premium headphone on the market, and AudifyePro is in a league of its own. The 3D soundstage is unreal."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://picsum.photos/seed/reviewer1/80/80.jpg" alt="Alex Chen" class="w-10 h-10 rounded-full object-cover border border-slate-700">
+                        <div>
+                            <div class="text-sm font-medium">Alex Chen</div>
+                            <div class="text-[11px] text-slate-500">Audio Engineer at Sony</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-card tilt-card p-8 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl hover:border-blue-500/20 transition-colors duration-300">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    </div>
+                    <p class="text-sm text-slate-300 leading-relaxed mb-6">"I wear these for 10+ hours during my production sessions. Zero fatigue, incredible comfort, and the noise cancellation is surgical. Best investment I've made this year."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://picsum.photos/seed/reviewer2/80/80.jpg" alt="Sarah Kim" class="w-10 h-10 rounded-full object-cover border border-slate-700">
+                        <div>
+                            <div class="text-sm font-medium">Sarah Kim</div>
+                            <div class="text-[11px] text-slate-500">Music Producer</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-card tilt-card p-8 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl hover:border-purple-500/20 transition-colors duration-300">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    </div>
+                    <p class="text-sm text-slate-300 leading-relaxed mb-6">"The build quality is insane — titanium frame feels premium. Battery lasts me an entire week of commuting. The fast charging saved me more times than I can count."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://picsum.photos/seed/reviewer3/80/80.jpg" alt="Marcus J" class="w-10 h-10 rounded-full object-cover border border-slate-700">
+                        <div>
+                            <div class="text-sm font-medium">Marcus J.</div>
+                            <div class="text-[11px] text-slate-500">Tech YouTuber, 2.4M subs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== CTA ===================== -->
+    <section id="cta" class="py-24 md:py-32 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="cta-section relative overflow-hidden rounded-3xl border border-slate-700/50">
+                <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-600/5 to-purple-600/10"></div>
+                <div class="absolute inset-0 grid-bg opacity-30"></div>
+                <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+                <div class="relative z-10 py-20 md:py-28 px-8 md:px-16 text-center">
+                    <div class="cta-content">
+                        <h2 class="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-6">
+                            Ready to Hear<br><span class="gradient-text">the Future?</span>
+                        </h2>
+                        <p class="text-slate-400 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+                            Join 12,000+ people who already pre-ordered. Limited first batch shipping March 2026.
+                        </p>
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button class="glow-button w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium px-10 py-4 rounded-xl text-base transition-all duration-300 shadow-[0_0_40px_rgba(6,182,212,0.3)] hover:shadow-[0_0_80px_rgba(6,182,212,0.5)]">
+                                Pre-Order Now — $349
+                            </button>
+                            <button class="w-full sm:w-auto flex items-center justify-center gap-2 text-slate-400 hover:text-white font-medium px-8 py-4 rounded-xl text-sm transition-colors duration-300 group">
+                                <i data-lucide="info" class="w-4 h-4 group-hover:text-cyan-400 transition-colors"></i>
+                                Learn More
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-600 mt-6">Free shipping worldwide • 30-day money back • 2-year warranty</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="border-t border-slate-800/80 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-10 mb-16">
+                <div class="col-span-2 md:col-span-1">
+                    <a href="#" class="flex items-center gap-2.5 mb-4">
+                        <div class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="headphones" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="font-semibold text-lg tracking-tight">AUDIFYE</span>
+                    </a>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-6 max-w-[220px]">Redefining personal audio with cutting-edge technology and uncompromising design.</p>
+                    <div class="flex items-center gap-3">
+                        <a href="#" class="w-9 h-9 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 hover:border-slate-600 rounded-lg flex items-center justify-center transition-all duration-150">
+                            <i data-lucide="twitter" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 hover:border-slate-600 rounded-lg flex items-center justify-center transition-all duration-150">
+                            <i data-lucide="instagram" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 hover:border-slate-600 rounded-lg flex items-center justify-center transition-all duration-150">
+                            <i data-lucide="youtube" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 hover:border-slate-600 rounded-lg flex items-center justify-center transition-all duration-150">
+                            <i data-lucide="linkedin" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-4">Product</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Features</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Specifications</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Compare</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Accessories</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-4">Support</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Help Center</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Warranty</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Returns</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-4">Company</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">About</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Careers</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Press</a></li>
+                        <li><a href="#" class="text-sm text-slate-500 hover:text-white transition-colors duration-150">Blog</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-slate-800/80 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-[11px] text-slate-600">© 2026 AudifyeAudio. All rights reserved.</p>
+                <div class="flex items-center gap-6">
+                    <a href="#" class="text-[11px] text-slate-600 hover:text-slate-400 transition-colors">Privacy</a>
+                    <a href="#" class="text-[11px] text-slate-600 hover:text-slate-400 transition-colors">Terms</a>
+                    <a href="#" class="text-[11px] text-slate-600 hover:text-slate-400 transition-colors">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===================== TOAST ===================== -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 opacity-0 translate-y-4 pointer-events-none transition-all duration-400" style="transition: opacity 0.4s, transform 0.4s;">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 toast-icon"></i>
+        <span id="toast-text">Added to waitlist!</span>
+    </div>
+
+    <!-- ===================== SCRIPTS ===================== -->
+    <script src="https://unpkg.com/motion@latest/dist/motion.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
+
+        const { animate, scroll, inView, stagger, spring } = Motion;
+
+        // ===== SCROLL PROGRESS BAR =====
+        scroll(animate('#scroll-progress', { scaleX: [0, 1] }, { easing: 'linear' }));
+
+        // ===== NAVBAR =====
+        let lastScroll = 0;
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            const y = window.scrollY;
+            if (y > 50) {
+                navbar.style.background = 'rgba(2,6,23,0.85)';
+                navbar.style.backdropFilter = 'blur(12px)';
+                navbar.style.borderBottom = '1px solid rgba(51,65,85,0.4)';
+            } else {
+                navbar.style.background = 'transparent';
+                navbar.style.backdropFilter = 'none';
+                navbar.style.borderBottom = '1px solid transparent';
+            }
+            lastScroll = y;
+        });
+
+        // ===== MOUSE SPOTLIGHT =====
+        const spotlight = document.getElementById('spotlight');
+        document.addEventListener('mousemove', (e) => {
+            spotlight.style.background = `radial-gradient(700px circle at ${e.clientX}px ${e.clientY}px, rgba(6,182,212,0.04), transparent 50%)`;
+        });
+
+        // ===== HERO ENTRANCE =====
+        const heroTl = [
+            { el: '#hero-badge', props: { opacity: [0, 1], y: [20, 0] }, opt: { duration: 0.6, delay: 0.1, easing: [0.25, 0.46, 0.45, 0.94] } },
+            { el: '#hero-title', props: { opacity: [0, 1], y: [40, 0] }, opt: { duration: 0.8, delay: 0.25, easing: [0.25, 0.46, 0.45, 0.94] } },
+            { el: '#hero-subtitle', props: { opacity: [0, 1], y: [30, 0] }, opt: { duration: 0.7, delay: 0.45, easing: [0.25, 0.46, 0.45, 0.94] } },
+            { el: '#hero-buttons', props: { opacity: [0, 1], y: [25, 0] }, opt: { duration: 0.6, delay: 0.6, easing: [0.25, 0.46, 0.45, 0.94] } },
+            { el: '#hero-stats', props: { opacity: [0, 1], y: [20, 0] }, opt: { duration: 0.6, delay: 0.75, easing: [0.25, 0.46, 0.45, 0.94] } },
+        ];
+        heroTl.forEach(({ el, props, opt }) => {
+            const element = document.querySelector(el);
+            if (element) { element.style.opacity = '0'; animate(el, props, opt); }
+        });
+
+        // Product 3D entrance
+        animate('#product-container', { opacity: [0, 1], scale: [0.8, 1], rotateY: [15, 0], rotateX: [-10, 0] }, { duration: 1.2, delay: 0.3, easing: [0.25, 0.46, 0.45, 0.94] });
+        document.querySelector('#product-container').style.opacity = '0';
+
+        // Scroll indicator fade
+        animate('#hero-scroll', { opacity: [0, 0.6] }, { duration: 0.8, delay: 1.2, easing: 'ease-out' });
+        document.querySelector('#hero-scroll').style.opacity = '0';
+
+        // ===== HERO PARALLAX ON SCROLL =====
+        const heroSection = document.getElementById('hero-section');
+        scroll(
+            animate('#product-parallax', { y: [0, 150], opacity: [1, 0] }),
+            { target: heroSection, offset: ['start start', 'end start'] }
+        );
+        scroll(
+            animate('#hero-scroll', { opacity: [0.6, 0] }),
+            { target: heroSection, offset: ['0.6 start', '0.9 start'] }
+        );
+
+        // ===== COUNTER ANIMATION =====
+        const counters = document.querySelectorAll('[data-count]');
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const target = parseInt(el.dataset.count);
+                    const prefix = el.dataset.prefix || '';
+                    const suffix = el.dataset.suffix || '';
+                    animate((progress) => {
+                        const current = Math.round(target * progress);
+                        el.textContent = prefix + current + suffix;
+                    }, { duration: 1.5, delay: 0.2, easing: [0.25, 0.46, 0.45, 0.94] });
+                    counterObserver.unobserve(el);
+                }
+            });
+        }, { threshold: 0.5 });
+        counters.forEach(c => counterObserver.observe(c));
+
+        // ===== 3D TILT ON MOUSE =====
+        function setupTilt(containerEl, innerEl, maxRotX = 15, maxRotY = 15) {
+            const container = document.querySelector(containerEl);
+            const inner = document.querySelector(innerEl);
+            if (!container || !inner) return;
+
+            let rafId = null;
+            container.addEventListener('mousemove', (e) => {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(() => {
+                    const rect = container.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width - 0.5;
+                    const y = (e.clientY - rect.top) / rect.height - 0.5;
+                    const rotY = x * maxRotY;
+                    const rotX = -y * maxRotX;
+                    inner.style.transition = 'transform 0.15s ease-out';
+                    inner.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                });
+            });
+            container.addEventListener('mouseleave', () => {
+                inner.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                inner.style.transform = 'rotateX(0deg) rotateY(0deg)';
+            });
+        }
+        setupTilt('#product-container', '#product-3d', 20, 20);
+        setupTilt('#showcase-inner', '#showcase-inner', 10, 10);
+
+        // ===== FEATURE CARDS 3D TILT (subtle) =====
+        document.querySelectorAll('.tilt-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                card.style.transform = `perspective(600px) rotateX(${-y * 8}deg) rotateY(${x * 8}deg) translateY(-4px)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.3s';
+                card.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+            });
+            card.addEventListener('mouseenter', () => {
+                card.style.transition = 'border-color 0.3s';
+            });
+        });
+
+        // ===== SCROLL-TRIGGERED ANIMATIONS =====
+        // Section headings
+        document.querySelectorAll('.section-heading').forEach((el) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            inView(el, () => {
+                animate(el, { opacity: [0, 1], y: [30, 0] }, { duration: 0.7, easing: [0.25, 0.46, 0.45, 0.94] });
+            }, { margin: '-80px' });
+        });
+
+        // Feature cards stagger
+        inView('.features-grid', () => {
+            animate('.feature-card', { opacity: [0, 1], y: [40, 0] }, {
+                delay: stagger(0.1),
+                duration: 0.6,
+                easing: [0.25, 0.46, 0.45, 0.94]
+            });
+        }, { margin: '-60px' });
+        document.querySelectorAll('.feature-card').forEach(c => { c.style.opacity = '0'; c.style.transform = 'translateY(40px)'; });
+
+        // Spec bars fill
+        document.querySelectorAll('.spec-bar-fill').forEach(bar => {
+            const targetWidth = bar.style.width;
+            bar.style.width = '0%';
+            inView(bar, () => {
+                animate(bar, { width: [0, targetWidth] }, { duration: 1.2, delay: 0.2, easing: [0.25, 0.46, 0.45, 0.94] });
+            }, { margin: '-40px' });
+        });
+
+        // Review cards stagger
+        inView('.reviews-grid', () => {
+            animate('.review-card', { opacity: [0, 1], y: [50, 0] }, {
+                delay: stagger(0.15),
+                duration: 0.7,
+                easing: [0.25, 0.46, 0.45, 0.94]
+            });
+        }, { margin: '-60px' });
+        document.querySelectorAll('.review-card').forEach(c => { c.style.opacity = '0'; c.style.transform = 'translateY(50px)'; });
+
+        // CTA section
+        inView('.cta-section', () => {
+            animate('.cta-content', { opacity: [0, 1], y: [40, 0], scale: [0.96, 1] }, {
+                duration: 0.9,
+                easing: [0.25, 0.46, 0.45, 0.94]
+            });
+        }, { margin: '-100px' });
+        const ctaContent = document.querySelector('.cta-content');
+        if (ctaContent) { ctaContent.style.opacity = '0'; ctaContent.style.transform = 'translateY(40px) scale(0.96)'; }
+
+        // ===== FLOATING ORBS =====
+        animate('.orb-1', {
+            x: [0, 40, -20, 30, 0],
+            y: [0, -30, 20, -10, 0]
+        }, { duration: 12, repeat: Infinity, easing: 'ease-in-out' });
+        animate('.orb-2', {
+            x: [0, -30, 20, -40, 0],
+            y: [0, 20, -30, 10, 0]
+        }, { duration: 15, repeat: Infinity, easing: 'ease-in-out' });
+        animate('.orb-3', {
+            x: [0, 25, -35, 15, 0],
+            y: [0, -15, 25, -20, 0]
+        }, { duration: 18, repeat: Infinity, easing: 'ease-in-out' });
+
+        // ===== MOUSE PARALLAX ON HERO BACKGROUND =====
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            animate('.orb-1', { x: x * 1.5, y: y * 1.5 }, { duration: 1.5, easing: 'ease-out' });
+            animate('.orb-2', { x: x * -1, y: y * -1 }, { duration: 1.5, easing: 'ease-out' });
+            animate('.orb-3', { x: x * 0.8, y: y * 0.8 }, { duration: 1.5, easing: 'ease-out' });
+        });
+
+        // ===== TOAST FUNCTION =====
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            toastText.textContent = message;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+            toast.style.pointerEvents = 'auto';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(16px)';
+                toast.style.pointerEvents = 'none';
+            }, 2500);
+        }
+
+        // ===== BUTTON CLICKS =====
+        document.querySelectorAll('.glow-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                animate(btn, { scale: [1, 0.95, 1] }, { duration: 0.2 });
+                showToast('Added to waitlist! We\'ll notify you soon.');
+            });
+        });
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // ===== PARTICLES IN HERO =====
+        const heroEl = document.getElementById('hero-section');
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            const size = Math.random() * 3 + 1;
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.background = Math.random() > 0.5 ? 'rgba(6,182,212,0.4)' : 'rgba(37,99,235,0.3)';
+            particle.style.opacity = '0';
+            heroEl.appendChild(particle);
+
+            animate(particle, {
+                opacity: [0, 0.6, 0],
+                y: [0, -(Math.random() * 100 + 50)],
+                x: [(Math.random() - 0.5) * 30, (Math.random() - 0.5) * 60]
+            }, {
+                duration: Math.random() * 6 + 4,
+                repeat: Infinity,
+                delay: Math.random() * 5,
+                easing: 'ease-out'
+            });
+        }
+
+        // ===== FOOTER LINKS HOVER SOUND EFFECT (visual pulse) =====
+        document.querySelectorAll('footer a').forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                animate(link, { x: [0, 3, 0] }, { duration: 0.3 });
+            });
+        });
+
+    });
+    </script>
+</body>
+</html>
