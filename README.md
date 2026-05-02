@@ -30,3 +30,6 @@ Specs	Animated progress bars + stat cards with hover effects
 Reviews	3-column testimonial cards with 3D tilt and staggered entrance
 CTA	Full-width gradient section with scale-in animation
 Footer	4-column layout with micro-interaction link hovers
+
+<img width="959" height="428" alt="image" src="https://github.com/user-attachments/assets/fa83a00a-449e-49e2-a0a3-0257233cd77f" />
+
